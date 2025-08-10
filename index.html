@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MidiPunkz Moon Raid</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameContainer {
+            position: relative;
+            border: 2px solid #444;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+
+        #gameCanvas {
+            background: #111;
+            display: block;
+        }
+
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 22px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        .stat {
+            margin-bottom: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        #levelUpScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #ffd700;
+            padding: 40px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            z-index: 100;
+            width: 500px;
+        }
+
+        #levelUpScreen h2 {
+            color: #ffd700;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        .upgrade-option {
+            background: #222;
+            border: 2px solid #555;
+            padding: 20px;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-radius: 5px;
+        }
+
+        .upgrade-option:hover {
+            background: #333;
+            border-color: #ffd700;
+            transform: scale(1.05);
+        }
+
+        .upgrade-option.selected {
+            background: #333;
+            border-color: #ffd700;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+
+        .upgrade-option h3 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .upgrade-option p {
+            font-size: 18px;
+        }
+
+        .upgrade-instructions {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #aaa;
+        }
+
+        #gameOverScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ff0000;
+            padding: 50px;
+            border-radius: 10px;
+            display: none;
+            text-align: center;
+            z-index: 100;
+            width: 500px;
+        }
+
+        #gameOverScreen h2 {
+            color: #ff0000;
+            margin-bottom: 30px;
+            font-size: 42px;
+        }
+
+        .final-stats {
+            margin: 30px 0;
+            font-size: 24px;
+            text-align: left;
+        }
+
+        .final-stats p {
+            margin: 10px 0;
+        }
+
+        .restart-btn {
+            background: #ff0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 22px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .restart-btn:hover {
+            background: #cc0000;
+            transform: scale(1.05);
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #ffd700;
+            padding: 50px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 100;
+            width: 600px;
+        }
+
+        #startScreen h1 {
+            color: #ffd700;
+            margin-bottom: 30px;
+            font-size: 48px;
+        }
+
+        .instructions {
+            margin: 30px 0;
+            text-align: left;
+            font-size: 20px;
+            line-height: 1.6;
+        }
+
+        .instructions p {
+            margin: 10px 0;
+        }
+
+        .start-btn {
+            background: #ffd700;
+            color: #000;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: all 0.3s;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .start-btn:hover {
+            background: #ffed4e';
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1024" height="768"></canvas>
+        
+        <div id="ui">
+            <div class="stat">Level: <span id="level">1</span></div>
+            <div class="stat">EXP: <span id="exp">0</span> / <span id="expNeeded">3</span></div>
+            <div class="stat">Time: <span id="time">0:00</span></div>
+            <div class="stat">Enemies: <span id="enemyCount">0</span></div>
+            <div class="stat">Difficulty: <span id="difficulty">Easy</span></div>
+        </div>
+
+        <div id="startScreen">
+            <h1>MidiPunkz Moon Raid</h1>
+            <div class="instructions">
+                <p><strong>Controls:</strong></p>
+                <p>• Move with WASD or Arrow Keys</p>
+                <p>• Your character attacks automatically</p>
+                <p>• Collect XP gems from defeated enemies</p>
+                <p>• Choose upgrades when leveling up</p>
+                <p>• Use 1, 2, 3 keys or Arrow Keys + Enter to select upgrades</p>
+                <p>• Survive as long as possible!</p>
+                <p><strong>Warning:</strong> Game gets progressively harder!</p>
+            </div>
+            <button class="start-btn" onclick="startGame()">Start Game</button>
+        </div>
+
+        <div id="levelUpScreen">
+            <h2>LEVEL UP!</h2>
+            <div id="upgradeOptions"></div>
+            <div class="upgrade-instructions">
+                Use 1, 2, 3 keys or Arrow Keys + Enter to select an upgrade
+            </div>
+        </div>
+
+        <div id="gameOverScreen">
+            <h2>GAME OVER</h2>
+            <div class="final-stats">
+                <p>Final Level: <span id="finalLevel">1</span></p>
+                <p>Time Survived: <span id="finalTime">0:00</span></p>
+                <p>Enemies Defeated: <span id="finalKills">0</span></p>
+            </div>
+            <button class="restart-btn" onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game state
+        let gameRunning = false;
+        let gamePaused = false;
+        let gameTime = 0;
+        let lastTime = 0;
+        let difficultyMultiplier = 1.0;
+        let selectedUpgradeIndex = 0; // For keyboard selection
+
+        // Player
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            radius: 25,
+            speed: 200,
+            health: 150, // Increased starting health
+            maxHealth: 150,
+            level: 1,
+            exp: 0,
+            expNeeded: 3, // Very low initial requirement
+            weapons: [
+                { type: 'whip', damage: 20, cooldown: 800, lastShot: 0, angle: 0 } // Better starting weapon
+            ]
+        };
+
+        // Load background image from GitHub
+        const backgroundImage = new Image();
+        backgroundImage.src = 'https://raw.githubusercontent.com/johngoad/images/main/MidiPunkzGame/RagnarSuxsBG.png';
+        let backgroundImageLoaded = false;
+        
+        backgroundImage.onload = function() {
+            backgroundImageLoaded = true;
+            console.log("Background image loaded successfully");
+        };
+        
+        backgroundImage.onerror = function() {
+            console.error('Failed to load background image');
+            backgroundImageLoaded = true; // Continue with fallback
+        };
+
+        // Load player image from GitHub
+        const playerImage = new Image();
+        playerImage.src = 'https://raw.githubusercontent.com/johngoad/images/main/MidiPunkzGame/MidiDJOS.png';
+        let playerImageLoaded = false;
+        
+        playerImage.onload = function() {
+            playerImageLoaded = true;
+        };
+        
+        // Handle image loading error
+        playerImage.onerror = function() {
+            console.error('Failed to load player image');
+            playerImageLoaded = true; // Continue with fallback
+        };
+
+        // Load enemy images from GitHub
+        const enemyImages = [];
+        const enemyImageUrls = [
+            'https://raw.githubusercontent.com/johngoad/images/main/MidiPunkzGame/ragnar-1.png',
+            'https://raw.githubusercontent.com/johngoad/images/main/MidiPunkzGame/ragnar-2.png',
+            'https://raw.githubusercontent.com/johngoad/images/main/MidiPunkzGame/ragnar-3.png',
+            'https://raw.githubusercontent.com/johngoad/images/main/MidiPunkzGame/ragnar-4.png'
+        ];
+        
+        let enemyImagesLoaded = 0;
+        
+        // Load all enemy images
+        enemyImageUrls.forEach(url => {
+            const img = new Image();
+            img.src = url;
+            enemyImages.push(img);
+            
+            img.onload = function() {
+                enemyImagesLoaded++;
+                console.log(`Loaded enemy image ${enemyImagesLoaded}/${enemyImageUrls.length}`);
+                if (enemyImagesLoaded === enemyImageUrls.length) {
+                    console.log('All enemy images loaded');
+                }
+            };
+            
+            img.onerror = function() {
+                console.error('Failed to load enemy image: ' + url);
+                enemyImagesLoaded++;
+                if (enemyImagesLoaded === enemyImageUrls.length) {
+                    console.log('All enemy images processed (some may have failed)');
+                }
+            };
+        });
+
+        // Input handling
+        const keys = {};
+        document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        // Handle keyboard input for level up screen
+        document.addEventListener('keydown', (e) => {
+            if (gamePaused && document.getElementById('levelUpScreen').style.display === 'block') {
+                // Number keys 1, 2, 3
+                if (e.key >= '1' && e.key <= '3') {
+                    const index = parseInt(e.key) - 1;
+                    if (index < upgradeOptions.length) {
+                        selectUpgrade(upgradeOptions[index]);
+                    }
+                }
+                
+                // Arrow keys
+                if (e.key === 'ArrowUp') {
+                    selectedUpgradeIndex = (selectedUpgradeIndex - 1 + upgradeOptions.length) % upgradeOptions.length;
+                    updateUpgradeSelection();
+                } else if (e.key === 'ArrowDown') {
+                    selectedUpgradeIndex = (selectedUpgradeIndex + 1) % upgradeOptions.length;
+                    updateUpgradeSelection();
+                } else if (e.key === 'Enter') {
+                    if (selectedUpgradeIndex < upgradeOptions.length) {
+                        selectUpgrade(upgradeOptions[selectedUpgradeIndex]);
+                    }
+                }
+            }
+        });
+
+        let upgradeOptions = [];
+
+        // Game objects
+        let enemies = [];
+        let projectiles = [];
+        let expGems = [];
+        let particles = [];
+        let enemyKills = 0;
+
+        // Weapon definitions
+        const weaponTypes = {
+            whip: { name: 'Whip', color: '#ff6b6b', description: 'Basic melee attack' },
+            magicWand: { name: 'Magic Wand', color: '#4ecdc4', description: 'Shoots magic projectiles' },
+            garlic: { name: 'Garlic', color: '#95e1d3', description: 'Damages nearby enemies' },
+            knife: { name: 'Throwing Knife', color: '#f38181', description: 'Fast throwing knives' }
+        };
+
+        // Upgrade options
+        const allUpgrades = [
+            { type: 'weapon', weapon: 'magicWand', name: 'Magic Wand', description: 'Add magic wand attack' },
+            { type: 'weapon', weapon: 'garlic', name: 'Garlic', description: 'Add garlic aura' },
+            { type: 'weapon', weapon: 'knife', name: 'Throwing Knife', description: 'Add throwing knives' },
+            { type: 'damage', value: 8, name: 'More Damage', description: 'Increase all weapon damage' },
+            { type: 'speed', value: 30, name: 'Faster Movement', description: 'Increase movement speed' },
+            { type: 'health', value: 30, name: 'More Health', description: 'Increase maximum health' },
+            { type: 'cooldown', value: 0.7, name: 'Faster Attacks', description: 'Reduce weapon cooldown' }
+        ];
+
+        // Enemy class with progressive difficulty
+        class Enemy {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 25;
+                
+                // Progressive difficulty: enemies get stronger over time
+                // Start very weak and gradually increase
+                const timeBasedDifficulty = 1 + (gameTime / 300); // +1 difficulty every 5 minutes (slower start)
+                const levelBasedDifficulty = 1 + (player.level / 20); // +0.05 difficulty per player level (slower)
+                
+                // Base stats are much weaker at the beginning
+                const baseSpeed = 15 + Math.random() * 10; // Reduced from 25+15
+                const baseHealth = 8 + Math.floor(gameTime / 60); // Reduced from 15+...
+                
+                this.speed = baseSpeed * difficultyMultiplier * timeBasedDifficulty * levelBasedDifficulty;
+                this.health = Math.floor(baseHealth * difficultyMultiplier * timeBasedDifficulty * levelBasedDifficulty);
+                this.maxHealth = this.health;
+                
+                this.animationFrame = 0;
+                this.animationSpeed = 0.2;
+                this.direction = 1;
+                this.color = `hsl(${Math.random() * 60}, 70%, 50%)`;
+            }
+
+            update(deltaTime) {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Update direction based on player position
+                if (dx > 0) {
+                    this.direction = 1;
+                } else if (dx < 0) {
+                    this.direction = -1;
+                }
+                
+                if (distance > 0) {
+                    this.x += (dx / distance) * this.speed * deltaTime;
+                    this.y += (dy / distance) * this.speed * deltaTime;
+                }
+                
+                // Update animation frame
+                this.animationFrame += this.animationSpeed * deltaTime * 60;
+                if (this.animationFrame >= enemyImages.length) {
+                    this.animationFrame = 0;
+                }
+            }
+
+            draw() {
+                const imageSize = 50;
+                
+                if (enemyImagesLoaded === enemyImageUrls.length && 
+                    enemyImages.length > 0 && 
+                    enemyImages[0] && 
+                    enemyImages[0].complete) {
+                    
+                    // Get the current animation frame
+                    const currentImage = enemyImages[Math.floor(this.animationFrame)];
+                    
+                    if (currentImage && currentImage.complete) {
+                        ctx.save();
+                        
+                        // Position and scale for the enemy image
+                        if (this.direction === -1) {
+                            // Flip image if facing left
+                            ctx.translate(this.x, this.y);
+                            ctx.scale(-1, 1);
+                            ctx.drawImage(currentImage, -imageSize/2, -imageSize/2, imageSize, imageSize);
+                        } else {
+                            // Draw normally if facing right
+                            ctx.drawImage(currentImage, this.x - imageSize/2, this.y - imageSize/2, imageSize, imageSize);
+                        }
+                        
+                        ctx.restore();
+                    } else {
+                        // Fallback to colored circle if specific frame isn't loaded
+                        this.drawFallback();
+                    }
+                } else {
+                    // Fallback to colored circle if images aren't loaded yet
+                    this.drawFallback();
+                }
+                
+                // Health bar (always show if health is less than max)
+                if (this.health < this.maxHealth) {
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(this.x - 25, this.y - this.radius - 15, 50, 6);
+                    ctx.fillStyle = '#ff0000';
+                    ctx.fillRect(this.x - 25, this.y - this.radius - 15, 50 * (this.health / this.maxHealth), 6);
+                }
+            }
+            
+            drawFallback() {
+                // Fallback: draw a simple circle if images aren't loaded yet
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            takeDamage(damage) {
+                this.health -= damage;
+                createParticles(this.x, this.y, '#ff0000');
+                return this.health <= 0;
+            }
+        }
+
+        // Projectile class
+        class Projectile {
+            constructor(x, y, angle, speed, damage, color, size = 5) {
+                this.x = x;
+                this.y = y;
+                this.angle = angle;
+                this.speed = speed;
+                this.damage = damage;
+                this.color = color;
+                this.radius = size;
+                this.lifetime = 2000;
+            }
+
+            update(deltaTime) {
+                this.x += Math.cos(this.angle) * this.speed * deltaTime;
+                this.y += Math.sin(this.angle) * this.speed * deltaTime;
+                this.lifetime -= deltaTime * 1000;
+                return this.lifetime > 0 && 
+                       this.x > -50 && this.x < canvas.width + 50 &&
+                       this.y > -50 && this.y < canvas.height + 50;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // EXP Gem class
+        class ExpGem {
+            constructor(x, y, value) {
+                this.x = x;
+                this.y = y;
+                this.value = value;
+                this.radius = 10;
+                this.lifetime = 10000;
+                this.pulled = false;
+            }
+
+            update(deltaTime) {
+                this.lifetime -= deltaTime * 1000;
+                
+                // Pull towards player when close
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < 150) {
+                    this.pulled = true;
+                }
+                
+                if (this.pulled && distance > 0) {
+                    this.x += (dx / distance) * 400 * deltaTime;
+                    this.y += (dy / distance) * 400 * deltaTime;
+                }
+                
+                return this.lifetime > 0;
+            }
+
+            draw() {
+                ctx.fillStyle = '#ffd700';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Glow effect
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ffd700';
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Particle effects
+        function createParticles(x, y, color) {
+            for (let i = 0; i < 8; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 150,
+                    vy: (Math.random() - 0.5) * 150,
+                    lifetime: 0.5,
+                    color: color
+                });
+            }
+        }
+
+        function updateParticles(deltaTime) {
+            particles = particles.filter(particle => {
+                particle.x += particle.vx * deltaTime;
+                particle.y += particle.vy * deltaTime;
+                particle.lifetime -= deltaTime;
+                return particle.lifetime > 0;
+            });
+        }
+
+        function drawParticles() {
+            particles.forEach(particle => {
+                ctx.fillStyle = particle.color;
+                ctx.globalAlpha = particle.lifetime / 0.5;
+                ctx.fillRect(particle.x - 3, particle.y - 3, 6, 6);
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        // Draw background
+        function drawBackground() {
+            if (backgroundImageLoaded && backgroundImage.complete) {
+                // Draw the background image to cover the entire canvas
+                ctx.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
+            } else {
+                // Fallback: draw a dark background
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        // Update difficulty based on game time and player level
+        function updateDifficulty() {
+            // Much more gradual difficulty increase
+            const timeDifficulty = 1 + (gameTime / 300); // +1 difficulty every 5 minutes (was 3)
+            const levelDifficulty = 1 + (player.level / 25); // +0.04 difficulty per level (was 15)
+            
+            // Combined difficulty with smoothing
+            difficultyMultiplier = Math.max(1, timeDifficulty * levelDifficulty);
+            
+            // Update difficulty display
+            let difficultyText = "Easy";
+            if (difficultyMultiplier >= 5) {
+                difficultyText = "Insane";
+            } else if (difficultyMultiplier >= 3) {
+                difficultyText = "Hard";
+            } else if (difficultyMultiplier >= 2) {
+                difficultyText = "Challenging";
+            } else if (difficultyMultiplier >= 1.5) {
+                difficultyText = "Moderate";
+            }
+            
+            document.getElementById('difficulty').textContent = difficultyText;
+        }
+
+        // Calculate EXP needed for next level with very gradual progression
+        function calculateExpNeeded(currentLevel) {
+            // Very low base EXP for early levels
+            const baseExp = 3;
+            
+            // Much more gradual progression
+            // Early levels (1-10): Very easy progression
+            // Mid levels (11-20): Easy progression
+            // Late levels (21+): Moderate progression
+            
+            let multiplier;
+            if (currentLevel <= 10) {
+                // Early game: Very easy progression
+                multiplier = 1.1 + (currentLevel - 1) * 0.02;
+            } else if (currentLevel <= 20) {
+                // Mid game: Easy progression
+                multiplier = 1.3 + (currentLevel - 11) * 0.03;
+            } else {
+                // Late game: Moderate progression
+                multiplier = 1.6 + (currentLevel - 21) * 0.04;
+            }
+            
+            // Reduced time-based difficulty
+            const timeBasedIncrease = Math.min(0.3, gameTime / 900); // Max 0.3 increase after 15 minutes (was 10)
+            
+            // Calculate the EXP needed
+            let expNeeded;
+            if (currentLevel === 1) {
+                expNeeded = baseExp;
+            } else {
+                expNeeded = Math.floor(player.expNeeded * (multiplier + timeBasedIncrease));
+            }
+            
+            // Ensure minimum EXP for each level (but keep it low)
+            const minExp = baseExp + (currentLevel - 1) * 1;
+            return Math.max(expNeeded, minExp);
+        }
+
+        // Update upgrade selection visual
+        function updateUpgradeSelection() {
+            const options = document.querySelectorAll('.upgrade-option');
+            options.forEach((option, index) => {
+                if (index === selectedUpgradeIndex) {
+                    option.classList.add('selected');
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+        }
+
+        // Game functions
+        function updatePlayer(deltaTime) {
+            // Movement
+            let dx = 0, dy = 0;
+            if (keys['w'] || keys['arrowup']) dy -= 1;
+            if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1;
+            if (keys['d'] || keys['arrowright']) dx += 1;
+            
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx *= 0.707;
+                dy *= 0.707;
+            }
+            
+            player.x += dx * player.speed * deltaTime;
+            player.y += dy * player.speed * deltaTime;
+            
+            // Keep player in bounds
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+            
+            // Update weapons
+            player.weapons.forEach(weapon => {
+                weapon.lastShot += deltaTime * 1000;
+                
+                if (weapon.lastShot >= weapon.cooldown) {
+                    weapon.lastShot = 0;
+                    
+                    switch (weapon.type) {
+                        case 'whip':
+                            // Whip attack - hits in a circle around player
+                            enemies.forEach(enemy => {
+                                const dist = Math.sqrt((enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2);
+                                if (dist < 80) {
+                                    if (enemy.takeDamage(weapon.damage)) {
+                                        enemyKilled(enemy);
+                                    }
+                                }
+                            });
+                            // Visual effect
+                            ctx.strokeStyle = weaponTypes.whip.color;
+                            ctx.lineWidth = 4;
+                            ctx.globalAlpha = 0.5;
+                            ctx.beginPath();
+                            ctx.arc(player.x, player.y, 80, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.globalAlpha = 1;
+                            break;
+                            
+                        case 'magicWand':
+                            // Shoot projectile at nearest enemy
+                            let nearestEnemy = null;
+                            let nearestDist = Infinity;
+                            enemies.forEach(enemy => {
+                                const dist = Math.sqrt((enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2);
+                                if (dist < nearestDist) {
+                                    nearestDist = dist;
+                                    nearestEnemy = enemy;
+                                }
+                            });
+                            
+                            if (nearestEnemy) {
+                                const angle = Math.atan2(nearestEnemy.y - player.y, nearestEnemy.x - player.x);
+                                projectiles.push(new Projectile(
+                                    player.x, player.y, angle, 350, weapon.damage,
+                                    weaponTypes.magicWand.color, 8
+                                ));
+                            }
+                            break;
+                            
+                        case 'garlic':
+                            // Garlic aura - continuous damage
+                            enemies.forEach(enemy => {
+                                const dist = Math.sqrt((enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2);
+                                if (dist < 100) {
+                                    if (enemy.takeDamage(weapon.damage * deltaTime)) {
+                                        enemyKilled(enemy);
+                                    }
+                                }
+                            });
+                            // Visual effect
+                            ctx.fillStyle = weaponTypes.garlic.color;
+                            ctx.globalAlpha = 0.2;
+                            ctx.beginPath();
+                            ctx.arc(player.x, player.y, 100, 0, Math.PI * 2);
+                            ctx.fill();
+                            ctx.globalAlpha = 1;
+                            break;
+                            
+                        case 'knife':
+                            // Throw knives in multiple directions
+                            for (let i = 0; i < 4; i++) {
+                                const angle = (Math.PI * 2 / 4) * i + weapon.angle;
+                                projectiles.push(new Projectile(
+                                    player.x, player.y, angle, 450, weapon.damage,
+                                    weaponTypes.knife.color, 6
+                                ));
+                            }
+                            weapon.angle += 0.5;
+                            break;
+                    }
+                }
+            });
+        }
+
+        function drawPlayer() {
+            if (playerImageLoaded && playerImage.complete) {
+                // Draw the image centered at player position
+                const imageSize = 50;
+                ctx.drawImage(
+                    playerImage, 
+                    player.x - imageSize / 2, 
+                    player.y - imageSize / 2, 
+                    imageSize, 
+                    imageSize
+                );
+            } else {
+                // Fallback: draw a simple circle if image isn't loaded yet
+                ctx.fillStyle = '#4a90e2';
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+            
+            // Health bar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(player.x - 25, player.y - player.radius - 20, 50, 8);
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(player.x - 25, player.y - player.radius - 20, 50 * (player.health / player.maxHealth), 8);
+        }
+
+        function spawnEnemies() {
+            // Much lower initial spawn rate that increases very gradually
+            const baseSpawnRate = 0.5; // Reduced from 1.0
+            const timeBasedIncrease = gameTime / 300; // +1 spawn rate every 5 minutes (was 2)
+            const levelBasedIncrease = player.level / 40; // +0.025 spawn rate per level (was 20)
+            
+            const spawnRate = Math.max(0.2, baseSpawnRate + timeBasedIncrease + levelBasedIncrease) * difficultyMultiplier;
+            
+            if (Math.random() < spawnRate * 0.016) { // 60 FPS assumption
+                const side = Math.floor(Math.random() * 4);
+                let x, y;
+                
+                switch (side) {
+                    case 0: x = Math.random() * canvas.width; y = -30; break;
+                    case 1: x = canvas.width + 30; y = Math.random() * canvas.height; break;
+                    case 2: x = Math.random() * canvas.width; y = canvas.height + 30; break;
+                    case 3: x = -30; y = Math.random() * canvas.height; break;
+                }
+                
+                enemies.push(new Enemy(x, y));
+            }
+        }
+
+        function updateEnemies(deltaTime) {
+            enemies.forEach(enemy => enemy.update(deltaTime));
+            
+            // Check collision with player
+            enemies.forEach(enemy => {
+                const dist = Math.sqrt((enemy.x - player.x) ** 2 + (enemy.y - player.y) ** 2);
+                if (dist < enemy.radius + player.radius) {
+                    // Much lower initial damage that increases gradually
+                    const baseDamage = 8; // Reduced from 15
+                    const timeBasedDamage = gameTime / 300; // +1 damage every 5 minutes (was 2)
+                    const damage = (baseDamage + timeBasedDamage) * difficultyMultiplier * deltaTime;
+                    
+                    player.health -= damage;
+                    createParticles(player.x, player.y, '#ff0000');
+                    
+                    if (player.health <= 0) {
+                        gameOver();
+                    }
+                }
+            });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => enemy.draw());
+        }
+
+        function updateProjectiles(deltaTime) {
+            projectiles = projectiles.filter(projectile => {
+                if (!projectile.update(deltaTime)) return false;
+                
+                // Check collision with enemies
+                for (let i = enemies.length - 1; i >= 0; i--) {
+                    const enemy = enemies[i];
+                    const dist = Math.sqrt((enemy.x - projectile.x) ** 2 + (enemy.y - projectile.y) ** 2);
+                    
+                    if (dist < enemy.radius + projectile.radius) {
+                        if (enemy.takeDamage(projectile.damage)) {
+                            enemyKilled(enemy);
+                            enemies.splice(i, 1);
+                        }
+                        return false;
+                    }
+                }
+                
+                return true;
+            });
+        }
+
+        function drawProjectiles() {
+            projectiles.forEach(projectile => projectile.draw());
+        }
+
+        function updateExpGems(deltaTime) {
+            expGems = expGems.filter(gem => {
+                if (!gem.update(deltaTime)) return false;
+                
+                // Check collection
+                const dist = Math.sqrt((gem.x - player.x) ** 2 + (gem.y - player.y) ** 2);
+                if (dist < player.radius + gem.radius) {
+                    player.exp += gem.value;
+                    checkLevelUp();
+                    return false;
+                }
+                
+                return true;
+            });
+        }
+
+        function drawExpGems() {
+            expGems.forEach(gem => gem.draw());
+        }
+
+        function enemyKilled(enemy) {
+            enemyKills++;
+            // Progressive difficulty: EXP value decreases over time but starts higher
+            const baseExpValue = 2 + Math.floor(gameTime / 60); // Increased from 1
+            const expReduction = Math.max(0.7, 1 - (gameTime / 900)); // Reduce to 70% after 15 minutes (was 10)
+            const expValue = Math.floor(baseExpValue * expReduction);
+            
+            expGems.push(new ExpGem(enemy.x, enemy.y, expValue));
+        }
+
+        function checkLevelUp() {
+            while (player.exp >= player.expNeeded) {
+                player.exp -= player.expNeeded;
+                player.level++;
+                // Calculate new EXP requirement based on progressive difficulty
+                player.expNeeded = calculateExpNeeded(player.level);
+                showLevelUpScreen();
+            }
+        }
+
+        function showLevelUpScreen() {
+            gamePaused = true;
+            const screen = document.getElementById('levelUpScreen');
+            const options = document.getElementById('upgradeOptions');
+            
+            options.innerHTML = '';
+            upgradeOptions = [];
+            selectedUpgradeIndex = 0; // Reset selection
+            
+            // Get 3 random upgrades
+            const availableUpgrades = [...allUpgrades];
+            
+            for (let i = 0; i < 3 && availableUpgrades.length > 0; i++) {
+                const index = Math.floor(Math.random() * availableUpgrades.length);
+                const upgrade = availableUpgrades.splice(index, 1)[0];
+                upgradeOptions.push(upgrade);
+                
+                const option = document.createElement('div');
+                option.className = 'upgrade-option';
+                if (i === 0) option.classList.add('selected'); // Highlight first option
+                option.innerHTML = `
+                    <h3>${upgrade.name}</h3>
+                    <p>${upgrade.description}</p>
+                `;
+                option.onclick = () => selectUpgrade(upgrade);
+                options.appendChild(option);
+            }
+            
+            screen.style.display = 'block';
+        }
+
+        function selectUpgrade(upgrade) {
+            switch (upgrade.type) {
+                case 'weapon':
+                    // Check if weapon already exists
+                    const hasWeapon = player.weapons.some(w => w.type === upgrade.weapon);
+                    if (!hasWeapon) {
+                        player.weapons.push({
+                            type: upgrade.weapon,
+                            damage: 12, // Better starting damage for new weapons
+                            cooldown: 1200, // Better cooldown for new weapons
+                            lastShot: 0,
+                            angle: 0
+                        });
+                    }
+                    break;
+                    
+                case 'damage':
+                    player.weapons.forEach(weapon => weapon.damage += upgrade.value);
+                    break;
+                    
+                case 'speed':
+                    player.speed += upgrade.value;
+                    break;
+                    
+                case 'health':
+                    player.maxHealth += upgrade.value;
+                    player.health = Math.min(player.health + upgrade.value, player.maxHealth);
+                    break;
+                    
+                case 'cooldown':
+                    player.weapons.forEach(weapon => weapon.cooldown *= upgrade.value);
+                    break;
+            }
+            
+            document.getElementById('levelUpScreen').style.display = 'none';
+            gamePaused = false;
+        }
+
+        function updateUI() {
+            document.getElementById('level').textContent = player.level;
+            document.getElementById('exp').textContent = player.exp;
+            document.getElementById('expNeeded').textContent = player.expNeeded;
+            document.getElementById('enemyCount').textContent = enemies.length;
+            
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = Math.floor(gameTime % 60);
+            document.getElementById('time').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update difficulty display
+            updateDifficulty();
+        }
+
+        function gameLoop(currentTime) {
+            if (!gameRunning) return;
+            
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+            
+            if (!gamePaused) {
+                gameTime += deltaTime;
+                
+                // Update game objects
+                updatePlayer(deltaTime);
+                spawnEnemies();
+                updateEnemies(deltaTime);
+                updateProjectiles(deltaTime);
+                updateExpGems(deltaTime);
+                updateParticles(deltaTime);
+                
+                // Draw background
+                drawBackground();
+                
+                // Draw everything
+                drawExpGems();
+                drawEnemies();
+                drawProjectiles();
+                drawPlayer();
+                drawParticles();
+                
+                updateUI();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            // Wait for images to load before starting
+            if (!backgroundImageLoaded || !playerImageLoaded || enemyImagesLoaded < enemyImageUrls.length) {
+                console.log(`Waiting for images to load: Background ${backgroundImageLoaded ? '✓' : '✗'}, Player ${playerImageLoaded ? '✓' : '✗'}, Enemies ${enemyImagesLoaded}/${enemyImageUrls.length}`);
+                setTimeout(startGame, 100);
+                return;
+            }
+            
+            console.log("Starting game - all images loaded");
+            document.getElementById('startScreen').style.display = 'none';
+            gameRunning = true;
+            gamePaused = false;
+            lastTime = performance.now();
+            gameLoop(lastTime);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            
+            document.getElementById('finalLevel').textContent = player.level;
+            document.getElementById('finalKills').textContent = enemyKills;
+            
+            const minutes = Math.floor(gameTime / 60);
+            const seconds = Math.floor(gameTime % 60);
+            document.getElementById('finalTime').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            
+            document.getElementById('gameOverScreen').style.display = 'block';
+        }
+
+        function restartGame() {
+            // Reset game state
+            player.x = canvas.width / 2;
+            player.y = canvas.height / 2;
+            player.health = player.maxHealth;
+            player.level = 1;
+            player.exp = 0;
+            player.expNeeded = 3; // Reset to easier initial requirement
+            player.weapons = [
+                { type: 'whip', damage: 20, cooldown: 800, lastShot: 0, angle: 0 }
+            ];
+            player.speed = 200;
+            
+            enemies = [];
+            projectiles = [];
+            expGems = [];
+            particles = [];
+            gameTime = 0;
+            enemyKills = 0;
+            difficultyMultiplier = 1.0;
+            
+            document.getElementById('gameOverScreen').style.display = 'none';
+            gameRunning = true;
+            gamePaused = false;
+            lastTime = performance.now();
+            gameLoop(lastTime);
+        }
+    </script>
+</body>
+</html>
